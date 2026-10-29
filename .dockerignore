@@ -1,0 +1,11 @@
+.venv/
+.tmp/
+.git/
+.claude/
+__pycache__/
+*.pyc
+.env
+credentials.json
+token.json
+CLAUDE.md
+README.md

@@ -1,0 +1,7 @@
+google-play-scraper
+gspread
+google-auth-oauthlib
+python-dotenv
+fastapi
+uvicorn
+openpyxl

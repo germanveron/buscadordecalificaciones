@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buscador de reseñas en Play Store</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2300a0ff' d='M3.6 2.2C3.2 2.4 3 2.8 3 3.4v17.2c0 .6.2 1 .6 1.2L13 12z'/%3E%3Cpath fill='%2300e676' d='M3.6 2.2 16 9.1 13 12z'/%3E%3Cpath fill='%23ff3d4a' d='M3.6 21.8 16 14.9 13 12z'/%3E%3Cpath fill='%23ffc400' d='m16 9.1 4.2 2.3c.7.4.7.8 0 1.2L16 14.9 13 12z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #eef2ef;
+  --surface: #ffffff;
+  --fg: #14201a;
+  --muted: #58675f;
+  --line: #d5ddd8;
+  --accent: #01875f;
+  --accent-fg: #ffffff;
+  --accent-soft: #e1f2ea;
+  --star: #e0a100;
+  --danger: #b3342b;
+  --font-head: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1512; --surface: #171e1b; --fg: #e7eee9; --muted: #96a69d;
+    --line: #2a3530; --accent: #3fbf8a; --accent-fg: #0a1a12; --accent-soft: #1a2b23;
+    --star: #f0b92b; --danger: #f07a70;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 var(--font-body);
+  padding: 48px max(16px, env(safe-area-inset-right)) 64px max(16px, env(safe-area-inset-left));
+}
+main { max-width: 780px; margin: 0 auto; }
+header { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 28px; }
+.logo { width: 56px; height: 56px; flex: none; margin-top: 4px; }
+h1 { font: 700 clamp(1.7rem, 4.5vw, 2.4rem)/1.1 var(--font-head); margin: 0 0 10px; text-wrap: balance; letter-spacing: -.01em; }
+.lede { margin: 0; color: var(--muted); max-width: 58ch; }
+
+.bench { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.step { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 16px; padding: 24px; }
+.step + .step { border-top: 1px solid var(--line); }
+.num {
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 600 14px var(--font-head);
+  background: var(--accent-soft); color: var(--accent);
+}
+h2 { font: 600 1.05rem/1.3 var(--font-head); margin: 3px 0 14px; }
+
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.row > * { min-width: 0; }
+label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+input, select, button { font: inherit; color: inherit; }
+input[type=text], input[type=date], select {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color-scheme: light dark;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grow { flex: 1 1 260px; }
+.country { flex: 0 1 180px; }
+
+.apps { display: grid; gap: 6px; margin-top: 12px; }
+.app {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; text-align: left; width: 100%;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer;
+}
+.app:hover { border-color: var(--accent); }
+.app.picked { border-color: var(--accent); background: var(--accent-soft); cursor: default; }
+.ico, .ico-fallback { width: 44px; height: 44px; border-radius: 10px; flex: none; }
+.ico { background: var(--line); object-fit: cover; }
+.ico-fallback { display: grid; place-items: center; font: 700 18px var(--font-head); background: var(--accent-soft); color: var(--accent); }
+.meta { min-width: 0; flex: 1; }
+.name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.score { font-size: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.score::before { content: "★ "; color: var(--star); }
+.linkbtn { background: none; border: 0; padding: 6px 4px; color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.hint { color: var(--muted); font-size: 14px; margin: 10px 0 0; }
+
+.mode { display: flex; gap: 8px; flex-wrap: wrap; }
+.mode label {
+  display: flex; align-items: center; gap: 8px; margin: 0; padding: 9px 14px; color: var(--fg);
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 15px;
+}
+.mode label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.mode input { accent-color: var(--accent); }
+.dates { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.dates > div { flex: 1 1 160px; }
+
+.btn {
+  display: inline-block; padding: 12px 22px; border-radius: 8px; border: 1px solid transparent;
+  font-weight: 600; cursor: pointer; text-decoration: none; text-align: center;
+}
+.btn.primary { background: var(--accent); color: var(--accent-fg); }
+.btn.ghost { background: transparent; border-color: var(--line); }
+.btn.ghost:hover { border-color: var(--danger); color: var(--danger); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.progress { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.progress .info { flex: 1 1 220px; min-width: 0; }
+.bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 8px; }
+.bar i { display: block; height: 100%; width: 35%; background: var(--accent); border-radius: 3px; animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .bar i { animation: none; width: 100%; } }
+.count { font-variant-numeric: tabular-nums; font-weight: 600; }
+.msg { margin: 0 0 12px; }
+.err { color: var(--danger); }
+[hidden] { display: none !important; }
+footer { color: var(--muted); font-size: 13px; margin-top: 18px; max-width: 62ch; }
+@media (max-width: 520px) { .step { grid-template-columns: 1fr; gap: 8px; padding: 20px 16px; } }
+
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <svg class="logo" viewBox="0 0 24 24" role="img" aria-label="Google Play">
+      <path fill="#00a0ff" d="M3.6 2.2C3.2 2.4 3 2.8 3 3.4v17.2c0 .6.2 1 .6 1.2L13 12z"/>
+      <path fill="#00e676" d="M3.6 2.2 16 9.1 13 12z"/>
+      <path fill="#ff3d4a" d="M3.6 21.8 16 14.9 13 12z"/>
+      <path fill="#ffc400" d="m16 9.1 4.2 2.3c.7.4.7.8 0 1.2L16 14.9 13 12z"/>
+    </svg>
+    <div>
+      <h1>Buscador de reseñas en Play Store</h1>
+      <p class="lede">Buscá cualquier app, elegí el período y bajá sus reseñas en un Excel para analizar los dolores y los puntos fuertes de tu producto o de la competencia.</p>
+    </div>
+  </header>
+
+  <div class="bench">
+    <section class="step" aria-labelledby="h1s">
+      <div class="num" aria-hidden="true">1</div>
+      <div>
+        <h2 id="h1s">Elegí la app</h2>
+        <div id="searchBox">
+          <div class="row">
+            <div class="grow">
+              <label for="q">Nombre de la app</label>
+              <input id="q" type="text" placeholder="Por ejemplo: Mercado Pago" autocomplete="off">
+            </div>
+            <div class="country">
+              <label for="country">País</label>
+              <select id="country"></select>
+            </div>
+          </div>
+          <div id="apps" class="apps" aria-live="polite"></div>
+          <p id="searchHint" class="hint" hidden></p>
+        </div>
+        <div id="pickedBox" class="apps" hidden></div>
+      </div>
+    </section>
+
+    <section class="step" aria-labelledby="h2s">
+      <div class="num" aria-hidden="true">2</div>
+      <div>
+        <h2 id="h2s">Elegí qué traer</h2>
+        <div class="mode">
+          <label><input type="radio" name="mode" value="all" checked> Todas las reseñas</label>
+          <label><input type="radio" name="mode" value="range"> Un período</label>
+        </div>
+        <div id="dates" class="dates" hidden>
+          <div><label for="since">Desde</label><input id="since" type="date"></div>
+          <div><label for="until">Hasta</label><input id="until" type="date"></div>
+        </div>
+        <p id="limits" class="hint"></p>
+      </div>
+    </section>
+
+    <section class="step" aria-labelledby="h3s">
+      <div class="num" aria-hidden="true">3</div>
+      <div>
+        <h2 id="h3s">Descargá el Excel</h2>
+        <div id="action" aria-live="polite"></div>
+      </div>
+    </section>
+  </div>
+
+  <footer>Los archivos se generan al momento y se borran del servidor a los 30 minutos. Las reseñas son públicas en Google Play.</footer>
+
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let cfg = null, selected = null, results = [], jobId = null, searchTimer = null, pollTimer = null;
+let state = { name: "idle" };
+
+const fmtDate = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
+const fmtNum = (n) => n.toLocaleString("es-AR");
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+
+/* ---------- Paso 1: app ---------- */
+function appRow(a, { picked = false } = {}) {
+  const row = el(picked ? "div" : "button", "app" + (picked ? " picked" : ""));
+  if (!picked) row.type = "button";
+  const fallback = () => { const f = el("div", "ico-fallback", (a.title || "?").trim().charAt(0).toUpperCase()); return f; };
+  let icon;
+  if (a.icon) {
+    icon = el("img", "ico"); icon.alt = ""; icon.loading = "lazy";
+    icon.src = "/api/icon?url=" + encodeURIComponent(a.icon);
+    icon.onerror = () => icon.replaceWith(fallback());
+  } else icon = fallback();
+  const meta = el("span", "meta");
+  meta.append(el("div", "name", a.title), el("div", "dev", a.developer || a.app_id));
+  row.append(icon, meta);
+  if (a.score) row.append(el("span", "score", String(a.score)));
+  return row;
+}
+
+function renderResults() {
+  const box = $("apps");
+  box.replaceChildren();
+  for (const a of results) {
+    const r = appRow(a);
+    r.onclick = () => pick(a);
+    box.append(r);
+  }
+}
+
+function pick(a) {
+  selected = a;
+  $("searchBox").hidden = true;
+  const box = $("pickedBox");
+  box.hidden = false;
+  box.replaceChildren(appRow(a, { picked: true }));
+  const change = el("button", "linkbtn", "Cambiar app");
+  change.type = "button";
+  change.onclick = unpick;
+  box.append(change);
+  resetResult();
+}
+
+function unpick() {
+  selected = null;
+  $("pickedBox").hidden = true;
+  $("searchBox").hidden = false;
+  $("q").focus();
+  resetResult();
+}
+
+async function doSearch() {
+  const q = $("q").value.trim(), hint = $("searchHint");
+  if (q.length < 2) { results = []; renderResults(); hint.hidden = true; return; }
+  hint.hidden = false; hint.textContent = "Buscando…";
+  try {
+    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&country=${$("country").value}`);
+    if (!res.ok) throw new Error();
+    results = await res.json();
+    hint.hidden = results.length > 0;
+    hint.textContent = "No encontramos apps con ese nombre.";
+    renderResults();
+  } catch { hint.textContent = "No se pudo buscar. Probá de nuevo."; }
+}
+
+$("q").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(doSearch, 350); });
+$("country").addEventListener("change", () => { results = []; renderResults(); doSearch(); resetResult(); });
+
+/* ---------- Paso 2: filtros ---------- */
+document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", () => {
+  $("dates").hidden = document.querySelector("input[name=mode]:checked").value !== "range";
+  resetResult();
+}));
+for (const id of ["since", "until"]) $(id).addEventListener("change", resetResult);
+
+/* ---------- Paso 3: una sola acción visible según el estado ---------- */
+function render() {
+  const box = $("action");
+  box.replaceChildren();
+  if (state.name === "idle" || state.name === "error" || state.name === "cancelled") {
+    if (state.message) box.append(el("p", "msg" + (state.name === "error" ? " err" : ""), state.message));
+    const b = el("button", "btn primary", "Obtener reseñas");
+    b.disabled = !selected;
+    b.onclick = start;
+    box.append(b);
+    if (!selected) box.append(el("p", "hint", "Elegí una app para continuar."));
+  } else if (state.name === "running") {
+    const wrap = el("div", "progress");
+    const info = el("div", "info");
+    const line = el("div");
+    const c = el("span", "count", fmtNum(state.count || 0));
+    line.append(c, document.createTextNode(" reseñas encontradas"));
+    const bar = el("div", "bar"); bar.append(el("i"));
+    info.append(line, bar);
+    const stop = el("button", "btn ghost", "Detener");
+    stop.onclick = stopJob;
+    wrap.append(info, stop);
+    box.append(wrap);
+  } else if (state.name === "done") {
+    const p = el("p", "msg");
+    p.append(el("span", "count", fmtNum(state.count)), document.createTextNode(` reseñas entre el ${fmtDate(state.since)} y el ${fmtDate(state.until)}.`));
+    box.append(p);
+    if (state.truncated) box.append(el("p", "hint", `Se alcanzó el máximo de ${fmtNum(cfg.max_reviews)}; el archivo incluye las más recientes.`));
+    if (state.count > 0) {
+      const a = el("a", "btn primary", "Descargar Excel");
+      a.href = `/api/jobs/${jobId}/download`;
+      box.append(a);
+    } else {
+      box.append(el("p", "hint", "Probá con otro período."));
+      const b = el("button", "btn primary", "Obtener reseñas"); b.onclick = start; box.append(b);
+    }
+  }
+}
+
+function setState(s) { state = s; render(); }
+function resetResult() { if (state.name !== "running") { clearTimeout(pollTimer); setState({ name: "idle" }); } }
+
+async function start() {
+  if (!selected) return;
+  const range = document.querySelector("input[name=mode]:checked").value === "range";
+  const body = { app_id: selected.app_id, country: $("country").value };
+  if (range) { body.since = $("since").value || null; body.until = $("until").value || null; }
+  setState({ name: "running", count: 0 });
+  try {
+    const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error((await res.json()).detail || "No se pudo iniciar la descarga.");
+    jobId = (await res.json()).id;
+    poll();
+  } catch (e) { setState({ name: "error", message: e.message }); }
+}
+
+async function stopJob() {
+  clearTimeout(pollTimer);
+  const id = jobId;
+  setState({ name: "cancelled", message: "Descarga detenida. Podés ajustar la app o el período y volver a empezar." });
+  try { await fetch(`/api/jobs/${id}/cancel`, { method: "POST" }); } catch {}
+}
+
+function poll() {
+  clearTimeout(pollTimer);
+  const id = jobId;
+  pollTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/jobs/${id}`);
+      if (!res.ok) throw new Error((await res.json()).detail || "Error");
+      const j = await res.json();
+      if (id !== jobId || state.name !== "running") return;
+      if (j.status === "running") { state.count = j.count; render(); return poll(); }
+      if (j.status === "error") return setState({ name: "error", message: j.message });
+      if (j.status === "done") return setState({ name: "done", count: j.count, since: j.since, until: j.until, truncated: j.truncated });
+    } catch (e) { setState({ name: "error", message: e.message }); }
+  }, 1000);
+}
+
+/* ---------- Inicio ---------- */
+(async function init() {
+  cfg = await (await fetch("/api/config")).json();
+  $("country").innerHTML = cfg.countries.map(c => `<option value="${c.code}">${c.name}</option>`).join("");
+  const today = new Date().toISOString().slice(0, 10);
+  for (const id of ["since", "until"]) { $(id).min = cfg.min_date; $(id).max = today; }
+  $("since").value = cfg.min_date; $("until").value = today;
+  $("limits").textContent = `Solo se incluyen reseñas desde el ${fmtDate(cfg.min_date)}, con un máximo de ${fmtNum(cfg.max_reviews)} por descarga.`;
+  render();
+})();
+</script>
+</body>
+</html>
