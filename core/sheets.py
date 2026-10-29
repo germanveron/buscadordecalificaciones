@@ -2,6 +2,7 @@
 (las columnas de categoría y sentimiento que se completan desde n8n quedan intactas)."""
 from __future__ import annotations
 
+import base64
 import json
 import os
 from datetime import date, timedelta
@@ -21,10 +22,18 @@ def is_configured() -> bool:
     return bool(os.getenv("SPREADSHEET_ID"))
 
 
+def _service_account_info(raw: str) -> dict:
+    """Acepta el JSON en una línea (con o sin comillas alrededor) o codificado en base64."""
+    raw = raw.strip().strip("'\"")
+    if not raw.startswith("{"):
+        raw = base64.b64decode(raw).decode("utf-8")
+    return json.loads(raw)
+
+
 def _client():
     raw = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
     if raw:
-        return gspread.service_account_from_dict(json.loads(raw))
+        return gspread.service_account_from_dict(_service_account_info(raw))
     path = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE")
     if path:
         return gspread.service_account(filename=path)
